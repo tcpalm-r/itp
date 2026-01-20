@@ -41,6 +41,7 @@ export default async function HomePage() {
           employeeName={user.full_name || undefined}
           currentUserId={user.id}
           isViewOnly={false}
+          isAdmin={user.app_role === 'admin'}
         />
       </main>
 

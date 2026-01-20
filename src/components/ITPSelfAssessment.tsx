@@ -12,11 +12,12 @@ interface ITPSelfAssessmentProps {
   employeeName?: string;
   currentUserId?: string;
   isViewOnly?: boolean;
+  isAdmin?: boolean;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isViewOnly = false }: ITPSelfAssessmentProps) {
+export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isViewOnly = false, isAdmin = false }: ITPSelfAssessmentProps) {
   const [assessments, setAssessments] = useState<ITPAssessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<ITPAssessment | null>(null);
   const [responses, setResponses] = useState<Record<string, number>>({});
@@ -172,6 +173,26 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
     }
   };
 
+  const resetSubmittedAssessment = async () => {
+    if (!currentAssessment || currentAssessment.status !== 'submitted') return;
+    if (!isAdmin) return;
+    if (!confirm('Are you sure you want to reset your submitted assessment? This will permanently delete all your responses and allow you to start fresh.')) return;
+    try {
+      setResetting(true);
+      setError(null);
+      const response = await fetch(`/api/itp/assessments/${currentAssessment.id}/reset`, { method: 'POST' });
+      if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Failed to reset assessment'); }
+      setResponses({});
+      setCurrentAssessment(null);
+      pendingChangesRef.current = {};
+      await loadAssessments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset assessment');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const completedCount = Object.keys(responses).length;
   const totalCount = allBehaviorKeys.length;
   const isComplete = completedCount === totalCount;
@@ -240,7 +261,6 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-sonance-charcoal">ITP Self-Assessment</h2>
-          <p className="text-sm text-muted-foreground mt-1">Rate yourself on each behavior from 1 (Not Living) to 5 (Role Modeling)</p>
         </div>
         <div className="flex items-center gap-3">
           {isDraft && (
@@ -314,6 +334,27 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Submit Assessment
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Reset Button for Submitted Assessments */}
+      {isAdmin && isOwnAssessment && isSubmitted && (
+        <div className="pt-6 border-t border-neutral-200">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-800">Admin: Reset Assessment</p>
+                <p className="text-xs text-amber-600 mt-1">Clear your submitted assessment and start fresh.</p>
+              </div>
+              <button 
+                onClick={resetSubmittedAssessment} 
+                disabled={resetting} 
+                className="inline-flex items-center px-4 py-2 border border-amber-300 rounded-lg text-amber-700 bg-white hover:bg-amber-100 transition-all duration-200 disabled:opacity-50 font-medium text-sm"
+              >
+                {resetting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}Reset Assessment
+              </button>
+            </div>
           </div>
         </div>
       )}
