@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { ITPSelfAssessment } from '@/components/ITPSelfAssessment';
+import { ITPLogo } from '@/components/ITPLogo';
 import { LogOut } from 'lucide-react';
 
 export default async function HomePage() {
@@ -16,8 +17,8 @@ export default async function HomePage() {
       <header className="bg-sonance-charcoal text-white shadow-md">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm">
-              <span className="text-sm font-bold tracking-tight">ITP</span>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm">
+              <ITPLogo size={32} />
             </div>
             <div>
               <h1 className="text-lg font-semibold tracking-tight">ITP Self-Assessment</h1>

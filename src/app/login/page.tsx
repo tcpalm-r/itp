@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Loader2, AlertCircle } from 'lucide-react';
+import { ITPLogo } from '@/components/ITPLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,8 +50,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full relative z-10 animate-slide-up">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-sonance-charcoal mb-6 shadow-lg">
-            <span className="text-2xl font-bold text-white tracking-tight">ITP</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white mb-6 shadow-lg border border-neutral-200/60">
+            <ITPLogo size={56} />
           </div>
           <h1 className="text-3xl font-semibold text-sonance-charcoal tracking-tight">
             Ideal Team Player Self-Assessment
