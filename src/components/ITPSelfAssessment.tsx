@@ -318,17 +318,6 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
         </div>
       )}
 
-      {/* Start New Assessment (for submitted) */}
-      {isSubmitted && isOwnAssessment && !isViewOnly && (
-        <div className="flex justify-end pt-6 border-t border-neutral-200">
-          <button 
-            onClick={createAssessment} 
-            className="inline-flex items-center px-5 py-2.5 bg-sonance-charcoal text-white rounded-lg hover:bg-sonance-charcoal-light transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-          >
-            <Plus className="w-4 h-4 mr-2" />Start New Assessment
-          </button>
-        </div>
-      )}
 
       {/* Past Assessments */}
       {archivedAssessments.length > 0 && (
