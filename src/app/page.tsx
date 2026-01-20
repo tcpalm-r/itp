@@ -20,10 +20,7 @@ export default async function HomePage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm">
               <ITPLogo size={32} />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold tracking-tight">ITP Self-Assessment</h1>
-              <p className="text-sm text-white/70">{user.full_name || user.email}</p>
-            </div>
+            <span className="text-base font-medium">{user.full_name || user.email}</span>
           </div>
           <form action="/api/auth/logout" method="POST">
             <button

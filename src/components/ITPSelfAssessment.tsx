@@ -192,9 +192,6 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
   if (!currentAssessment && isOwnAssessment && !isViewOnly) {
     return (
       <div className="text-center py-12 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-sonance-charcoal/5 mb-6">
-          <Plus className="w-10 h-10 text-sonance-charcoal" />
-        </div>
         <h3 className="text-xl font-semibold text-sonance-charcoal mb-3">Start Your Assessment</h3>
         <p className="text-muted-foreground mb-8 max-w-md mx-auto">
           Take the Ideal Team Player self-assessment to evaluate yourself across 12 core behaviors in three virtues: Humble, Hungry, and People Smart.
