@@ -310,7 +310,7 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
             <button 
               onClick={submitAssessment} 
               disabled={!isComplete || submitting} 
-              className="inline-flex items-center px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
+              className="inline-flex items-center px-5 py-2.5 bg-sonance-cyan text-white rounded-lg hover:bg-sonance-cyan-dark transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Submit Assessment
             </button>
