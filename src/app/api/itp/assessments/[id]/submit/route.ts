@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, canEditAssessment } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getAllBehaviorKeys } from '@/lib/itpBehaviors';
 
 // POST /api/itp/assessments/[id]/submit
@@ -16,7 +16,7 @@ export async function POST(
   const { id } = await params;
 
   // Fetch assessment with responses
-  const { data: assessment, error: fetchError } = await supabaseAdmin
+  const { data: assessment, error: fetchError } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select(`
       employee_id,
@@ -54,14 +54,14 @@ export async function POST(
   }
 
   // Archive any previously submitted assessment
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('itp_assessments')
     .update({ status: 'archived' })
     .eq('employee_id', assessment.employee_id)
     .eq('status', 'submitted');
 
   // Submit the current assessment
-  const { data: submittedAssessment, error: submitError } = await supabaseAdmin
+  const { data: submittedAssessment, error: submitError } = await getSupabaseAdmin()
     .from('itp_assessments')
     .update({
       status: 'submitted',

@@ -1,119 +1,88 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { ITPAssessment, UserProfile, SaveStatus } from '@/types';
-import { getBehaviorsByVirtue, ITP_BEHAVIORS } from '@/lib/itpBehaviors';
-import ITPVirtueSection from './ITPVirtueSection';
-import ITPAssessmentHistory from './ITPAssessmentHistory';
-import {
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  Save,
-  Send,
-  RotateCcw,
-  LogOut,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ITPAssessment, ITPVirtue } from '@/types';
+import { getBehaviorsByVirtue, getAllBehaviorKeys } from '@/lib/itpBehaviors';
+import { ITPVirtueSection } from './ITPVirtueSection';
+import { ITPAssessmentHistory } from './ITPAssessmentHistory';
+import { Loader2, Save, Send, Plus, CheckCircle, AlertCircle, Clock, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 
 interface ITPSelfAssessmentProps {
-  user: UserProfile;
+  employeeId: string;
+  employeeName?: string;
+  currentUserId?: string;
+  isViewOnly?: boolean;
 }
 
-export default function ITPSelfAssessment({ user }: ITPSelfAssessmentProps) {
-  const router = useRouter();
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isViewOnly = false }: ITPSelfAssessmentProps) {
   const [assessments, setAssessments] = useState<ITPAssessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<ITPAssessment | null>(null);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [responses, setResponses] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [submitting, setSubmitting] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const pendingChanges = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingChangesRef = useRef<Record<string, number>>({});
 
   const behaviorsByVirtue = getBehaviorsByVirtue();
+  const allBehaviorKeys = getAllBehaviorKeys();
+  const isOwnAssessment = currentUserId === employeeId;
 
-  // Fetch assessments on mount
-  useEffect(() => {
-    fetchAssessments();
-  }, []);
-
-  // Auto-save on visibility change
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && Object.keys(pendingChanges.current).length > 0) {
-        saveDraft(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [currentAssessment]);
-
-  const fetchAssessments = async () => {
+  const loadAssessments = useCallback(async () => {
     try {
-      const response = await fetch(`/api/itp/assessments?employee_id=${user.id}`);
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`/api/itp/assessments?employee_id=${employeeId}`);
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch assessments');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to load assessments');
 
       setAssessments(data.assessments || []);
-
-      // Find draft or submitted assessment
       const draft = data.assessments?.find((a: ITPAssessment) => a.status === 'draft');
       const submitted = data.assessments?.find((a: ITPAssessment) => a.status === 'submitted');
 
       if (draft) {
         setCurrentAssessment(draft);
-        // Load existing ratings
-        const existingRatings: Record<string, number> = {};
-        draft.responses?.forEach((r: { behavior_key: string; rating: number }) => {
-          existingRatings[r.behavior_key] = r.rating;
-        });
-        setRatings(existingRatings);
+        const responseMap: Record<string, number> = {};
+        draft.responses?.forEach((r: any) => { responseMap[r.behaviorKey || r.behavior_key] = r.rating; });
+        setResponses(responseMap);
       } else if (submitted) {
         setCurrentAssessment(submitted);
-        // Load submitted ratings
-        const existingRatings: Record<string, number> = {};
-        submitted.responses?.forEach((r: { behavior_key: string; rating: number }) => {
-          existingRatings[r.behavior_key] = r.rating;
-        });
-        setRatings(existingRatings);
+        const responseMap: Record<string, number> = {};
+        submitted.responses?.forEach((r: any) => { responseMap[r.behaviorKey || r.behavior_key] = r.rating; });
+        setResponses(responseMap);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load assessments');
     } finally {
       setLoading(false);
     }
-  };
+  }, [employeeId]);
+
+  useEffect(() => { loadAssessments(); }, [loadAssessments]);
 
   const createAssessment = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch('/api/itp/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_id: user.id }),
+        body: JSON.stringify({ employee_id: employeeId }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        if (response.status === 409 && data.existingId) {
-          // Draft already exists, fetch it
-          await fetchAssessments();
-          return;
-        }
+        if (response.status === 409 && data.existingId) { await loadAssessments(); return; }
         throw new Error(data.error || 'Failed to create assessment');
       }
-
       setCurrentAssessment(data.assessment);
-      setRatings({});
-      setAssessments((prev) => [data.assessment, ...prev]);
+      setResponses({});
+      await loadAssessments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create assessment');
     } finally {
@@ -121,98 +90,62 @@ export default function ITPSelfAssessment({ user }: ITPSelfAssessmentProps) {
     }
   };
 
-  const saveDraft = useCallback(
-    async (immediate = false) => {
-      if (!currentAssessment || currentAssessment.status !== 'draft') return;
-      if (Object.keys(pendingChanges.current).length === 0) return;
-
-      const changesToSave = { ...pendingChanges.current };
-      pendingChanges.current = {};
-
-      setSaveStatus('saving');
-
-      try {
-        const response = await fetch(
-          `/api/itp/assessments/${currentAssessment.id}/save-draft`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              responses: Object.entries(changesToSave).map(([behaviorKey, rating]) => ({
-                behaviorKey,
-                rating,
-              })),
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to save');
-        }
-
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch {
-        setSaveStatus('error');
-        // Re-queue failed changes
-        pendingChanges.current = { ...changesToSave, ...pendingChanges.current };
-      }
-    },
-    [currentAssessment]
-  );
-
-  const handleRatingChange = (behaviorKey: string, rating: number) => {
-    setRatings((prev) => ({ ...prev, [behaviorKey]: rating }));
-    pendingChanges.current[behaviorKey] = rating;
-
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Set new timeout for auto-save (2 seconds)
-    saveTimeoutRef.current = setTimeout(() => {
-      saveDraft();
-    }, 2000);
-  };
-
-  const handleSubmit = async () => {
-    if (!currentAssessment) return;
-
-    // Check all behaviors are rated
-    const missingBehaviors = ITP_BEHAVIORS.filter(
-      (b) => !ratings[b.behaviorKey]
-    );
-
-    if (missingBehaviors.length > 0) {
-      setError(
-        `Please rate all behaviors. Missing: ${missingBehaviors.map((b) => b.behaviorName).join(', ')}`
-      );
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
-    // Save any pending changes first
-    if (Object.keys(pendingChanges.current).length > 0) {
-      await saveDraft(true);
-    }
+  const saveDraft = useCallback(async (changesToSave: Record<string, number>) => {
+    if (!currentAssessment || currentAssessment.status !== 'draft') return;
+    const responseArray = Object.entries(changesToSave).map(([behaviorKey, rating]) => ({ behaviorKey, rating }));
+    if (responseArray.length === 0) return;
 
     try {
-      const response = await fetch(
-        `/api/itp/assessments/${currentAssessment.id}/submit`,
-        { method: 'POST' }
-      );
+      setSaveStatus('saving');
+      const response = await fetch(`/api/itp/assessments/${currentAssessment.id}/save-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ responses: responseArray }),
+      });
+      if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Failed to save draft'); }
+      setSaveStatus('saved');
+      pendingChangesRef.current = {};
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      setSaveStatus('error');
+    }
+  }, [currentAssessment]);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit');
+  const handleResponseChange = useCallback((behaviorKey: string, rating: number) => {
+    setResponses(prev => {
+      const updated = { ...prev, [behaviorKey]: rating };
+      pendingChangesRef.current[behaviorKey] = rating;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (currentAssessment?.status === 'draft' && !isViewOnly) {
+        saveTimeoutRef.current = setTimeout(() => { saveDraft(pendingChangesRef.current); }, 2000);
       }
+      return updated;
+    });
+  }, [currentAssessment, isViewOnly, saveDraft]);
 
-      // Refresh assessments
-      await fetchAssessments();
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && Object.keys(pendingChangesRef.current).length > 0) saveDraft(pendingChangesRef.current);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => { document.removeEventListener('visibilitychange', handleVisibilityChange); };
+  }, [saveDraft]);
+
+  useEffect(() => { return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); }; }, []);
+
+  const submitAssessment = async () => {
+    if (!currentAssessment) return;
+    if (Object.keys(pendingChangesRef.current).length > 0) await saveDraft(pendingChangesRef.current);
+    try {
+      setSubmitting(true);
+      setError(null);
+      const response = await fetch(`/api/itp/assessments/${currentAssessment.id}/submit`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        if (data.missingBehaviors) throw new Error(`Please rate all behaviors before submitting. Missing: ${data.missingBehaviors.join(', ')}`);
+        throw new Error(data.error || 'Failed to submit assessment');
+      }
+      await loadAssessments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit assessment');
     } finally {
@@ -220,250 +153,162 @@ export default function ITPSelfAssessment({ user }: ITPSelfAssessmentProps) {
     }
   };
 
-  const handleStartNew = async () => {
-    // Archive current submitted assessment by creating a new draft
-    setRatings({});
-    setCurrentAssessment(null);
-    await createAssessment();
-  };
-
-  const handleReset = async () => {
+  const resetDraft = async () => {
     if (!currentAssessment || currentAssessment.status !== 'draft') return;
-
-    if (!confirm('Are you sure you want to reset? This will delete all your current ratings.')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to reset? This will clear all your current responses.')) return;
     try {
-      await fetch(`/api/itp/assessments/${currentAssessment.id}`, {
-        method: 'DELETE',
-      });
-      setRatings({});
+      setResetting(true);
+      setError(null);
+      const response = await fetch(`/api/itp/assessments/${currentAssessment.id}`, { method: 'DELETE' });
+      if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Failed to reset assessment'); }
+      setResponses({});
       setCurrentAssessment(null);
-      await fetchAssessments();
+      pendingChangesRef.current = {};
+      await loadAssessments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset assessment');
+    } finally {
+      setResetting(false);
     }
   };
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
-  };
-
-  const ratedCount = Object.keys(ratings).length;
-  const totalBehaviors = ITP_BEHAVIORS.length;
-  const progressPercent = (ratedCount / totalBehaviors) * 100;
-  const isComplete = ratedCount === totalBehaviors;
+  const completedCount = Object.keys(responses).length;
+  const totalCount = allBehaviorKeys.length;
+  const isComplete = completedCount === totalCount;
   const isDraft = currentAssessment?.status === 'draft';
   const isSubmitted = currentAssessment?.status === 'submitted';
+  const canEdit = isDraft && isOwnAssessment && !isViewOnly;
+  const archivedAssessments = assessments.filter(a => a.status === 'archived');
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <span className="ml-3 text-gray-500">Loading assessment...</span>
+      </div>
+    );
+  }
+
+  if (!currentAssessment && isOwnAssessment && !isViewOnly) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No ITP Self-Assessment Yet</h3>
+        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+          Take the Ideal Team Player self-assessment to evaluate yourself across 12 core behaviors in three virtues: Humble, Hungry, and People Smart.
+        </p>
+        <button onClick={createAssessment} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-4 h-4 mr-2" />Start Self-Assessment
+        </button>
+        {archivedAssessments.length > 0 && (
+          <div className="mt-8">
+            <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center mx-auto">
+              {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+              View Past Assessments ({archivedAssessments.length})
+            </button>
+            {showHistory && <ITPAssessmentHistory assessments={archivedAssessments} />}
+          </div>
+        )}
+        {error && <div className="mt-4 text-red-600 text-sm">{error}</div>}
+      </div>
+    );
+  }
+
+  if (!currentAssessment) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+          <AlertCircle className="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Assessment Available</h3>
+        <p className="text-gray-500 max-w-md mx-auto">{employeeName || 'This employee'} has not completed an ITP self-assessment yet.</p>
+        {archivedAssessments.length > 0 && (
+          <div className="mt-8">
+            <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center mx-auto">
+              {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+              View Past Assessments ({archivedAssessments.length})
+            </button>
+            {showHistory && <ITPAssessmentHistory assessments={archivedAssessments} />}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                ITP Self-Assessment
-              </h1>
-              <p className="text-sm text-gray-600">
-                {user.full_name} ({user.email})
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Save Status */}
-              {isDraft && (
-                <div className="flex items-center gap-2 text-sm">
-                  {saveStatus === 'saving' && (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                      <span className="text-blue-600">Saving...</span>
-                    </>
-                  )}
-                  {saveStatus === 'saved' && (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-green-600">Saved</span>
-                    </>
-                  )}
-                  {saveStatus === 'error' && (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-red-600" />
-                      <span className="text-red-600">Save failed</span>
-                    </>
-                  )}
-                </div>
-              )}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm">Sign out</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          {(isDraft || isSubmitted) && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-gray-600">
-                  {ratedCount} of {totalBehaviors} behaviors rated
-                </span>
-                <span className={isComplete ? 'text-green-600 font-medium' : 'text-gray-600'}>
-                  {Math.round(progressPercent)}%
-                </span>
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    isComplete ? 'bg-green-500' : 'bg-blue-500'
-                  }`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">ITP Self-Assessment</h2>
+          <p className="text-sm text-gray-500 mt-1">Rate yourself on each behavior from 1 (Not Living) to 5 (Role Modeling)</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {isDraft && <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"><Clock className="w-4 h-4 mr-1" />Draft</span>}
+          {isSubmitted && <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"><CheckCircle className="w-4 h-4 mr-1" />Submitted</span>}
+          {canEdit && (
+            <div className="flex items-center text-sm">
+              {saveStatus === 'saving' && <span className="text-gray-500 flex items-center"><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving...</span>}
+              {saveStatus === 'saved' && <span className="text-green-600 flex items-center"><CheckCircle className="w-4 h-4 mr-1" />Saved</span>}
+              {saveStatus === 'error' && <span className="text-red-600 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />Save failed</span>}
             </div>
           )}
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-auto text-red-800 hover:text-red-900"
-            >
-              Dismiss
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+          <span className="text-sm text-gray-500">{completedCount}/{totalCount} behaviors rated</span>
+        </div>
+        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className={`h-full transition-all duration-300 ${isComplete ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${(completedCount / totalCount) * 100}%` }} />
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="flex items-center"><AlertCircle className="w-5 h-5 mr-2" />{error}</div>
+        </div>
+      )}
+
+      {(['humble', 'hungry', 'people_smart'] as ITPVirtue[]).map((virtue) => (
+        <ITPVirtueSection key={virtue} virtue={virtue} behaviors={behaviorsByVirtue[virtue]} responses={responses} onResponseChange={handleResponseChange} disabled={!canEdit} />
+      ))}
+
+      {canEdit && (
+        <div className="flex justify-between pt-4 border-t border-gray-200">
+          <button onClick={resetDraft} disabled={resetting} className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-50">
+            {resetting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}Reset
+          </button>
+          <div className="flex gap-3">
+            <button onClick={() => saveDraft(responses)} disabled={saveStatus === 'saving'} className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50">
+              <Save className="w-4 h-4 mr-2" />Save Draft
+            </button>
+            <button onClick={submitAssessment} disabled={!isComplete || submitting} className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Submit Assessment
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* No assessment - start new */}
-        {!currentAssessment && (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Welcome to your ITP Self-Assessment
-            </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Rate yourself on 12 behaviors across three virtues: Humble, Hungry,
-              and People Smart. Your progress will be saved automatically.
-            </p>
-            <button
-              onClick={createAssessment}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              Start Self-Assessment
-            </button>
-          </div>
-        )}
+      {isSubmitted && isOwnAssessment && !isViewOnly && (
+        <div className="flex justify-end pt-4 border-t border-gray-200">
+          <button onClick={createAssessment} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Plus className="w-4 h-4 mr-2" />Start New Assessment
+          </button>
+        </div>
+      )}
 
-        {/* Submitted assessment - view only */}
-        {isSubmitted && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">
-                  Assessment submitted on{' '}
-                  {new Date(currentAssessment.submitted_at!).toLocaleDateString()}
-                </span>
-              </div>
-              <button
-                onClick={handleStartNew}
-                className="text-sm text-green-700 hover:text-green-800 font-medium"
-              >
-                Start new assessment
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Assessment form */}
-        {currentAssessment && (
-          <>
-            <ITPVirtueSection
-              virtue="humble"
-              behaviors={behaviorsByVirtue.humble}
-              ratings={ratings}
-              onRatingChange={handleRatingChange}
-              disabled={isSubmitted}
-            />
-            <ITPVirtueSection
-              virtue="hungry"
-              behaviors={behaviorsByVirtue.hungry}
-              ratings={ratings}
-              onRatingChange={handleRatingChange}
-              disabled={isSubmitted}
-            />
-            <ITPVirtueSection
-              virtue="people_smart"
-              behaviors={behaviorsByVirtue.people_smart}
-              ratings={ratings}
-              onRatingChange={handleRatingChange}
-              disabled={isSubmitted}
-            />
-
-            {/* Action buttons for draft */}
-            {isDraft && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Reset
-                </button>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => saveDraft(true)}
-                    disabled={Object.keys(pendingChanges.current).length === 0}
-                    className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!isComplete || submitting}
-                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Submit Assessment
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Assessment History */}
-        <ITPAssessmentHistory assessments={assessments} />
-      </main>
+      {archivedAssessments.length > 0 && (
+        <div className="pt-4 border-t border-gray-200">
+          <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center">
+            {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+            Past Assessments ({archivedAssessments.length})
+          </button>
+          {showHistory && <ITPAssessmentHistory assessments={archivedAssessments} />}
+        </div>
+      )}
     </div>
   );
 }
+
+export default ITPSelfAssessment;

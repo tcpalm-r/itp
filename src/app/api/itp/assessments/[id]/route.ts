@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, canViewAssessment, canEditAssessment } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 // GET /api/itp/assessments/[id]
 export async function GET(
@@ -15,7 +15,7 @@ export async function GET(
   const { id } = await params;
 
   // Fetch assessment with responses
-  const { data: assessment, error } = await supabaseAdmin
+  const { data: assessment, error } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select(`
       id,
@@ -40,7 +40,7 @@ export async function GET(
   }
 
   // Get employee profile for authorization check
-  const { data: employeeProfile } = await supabaseAdmin
+  const { data: employeeProfile } = await getSupabaseAdmin()
     .from('user_profiles')
     .select('id, manager_id, manager_email')
     .eq('id', assessment.employee_id)
@@ -73,7 +73,7 @@ export async function DELETE(
   const { id } = await params;
 
   // Fetch assessment to check ownership
-  const { data: assessment, error: fetchError } = await supabaseAdmin
+  const { data: assessment, error: fetchError } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select('employee_id, status')
     .eq('id', id)
@@ -94,7 +94,7 @@ export async function DELETE(
   }
 
   // Delete assessment (responses cascade)
-  const { error: deleteError } = await supabaseAdmin
+  const { error: deleteError } = await getSupabaseAdmin()
     .from('itp_assessments')
     .delete()
     .eq('id', id);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if email exists in user_profiles
-  const { data: profile, error } = await supabaseAdmin
+  const { data: profile, error } = await getSupabaseAdmin()
     .from('user_profiles')
     .select('id, email, full_name, app_role, manager_id, manager_email')
     .eq('email', email.toLowerCase())

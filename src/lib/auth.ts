@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { supabaseAdmin } from './supabase-admin';
+import { getSupabaseAdmin } from './supabase-admin';
 import { UserProfile } from '@/types';
 
 export async function getAuthenticatedUser(): Promise<UserProfile | null> {
@@ -11,7 +11,7 @@ export async function getAuthenticatedUser(): Promise<UserProfile | null> {
   }
 
   // Look up full profile from user_profiles
-  const { data: profile, error } = await supabaseAdmin
+  const { data: profile, error } = await getSupabaseAdmin()
     .from('user_profiles')
     .select('id, email, full_name, app_role, manager_id, manager_email')
     .eq('id', userId)

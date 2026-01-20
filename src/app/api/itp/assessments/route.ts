@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, canViewAssessment, canEditAssessment } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 // GET /api/itp/assessments?employee_id=<uuid>
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   // Get the target employee's profile to check authorization
   if (employeeId !== user.id) {
-    const { data: targetProfile } = await supabaseAdmin
+    const { data: targetProfile } = await getSupabaseAdmin()
       .from('user_profiles')
       .select('id, manager_id, manager_email')
       .eq('id', employeeId)
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch assessments with responses
-  const { data: assessments, error } = await supabaseAdmin
+  const { data: assessments, error } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select(`
       id,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if there's already a draft assessment
-  const { data: existingDraft } = await supabaseAdmin
+  const { data: existingDraft } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select('id')
     .eq('employee_id', employeeId)
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Create new draft assessment
-  const { data: assessment, error } = await supabaseAdmin
+  const { data: assessment, error } = await getSupabaseAdmin()
     .from('itp_assessments')
     .insert({
       employee_id: employeeId,

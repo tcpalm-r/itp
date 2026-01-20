@@ -1,47 +1,42 @@
 'use client';
 
+import React from 'react';
 import { ITPBehavior, ITPVirtue } from '@/types';
 import { VIRTUE_CONFIG } from '@/lib/itpBehaviors';
-import ITPBehaviorSlider from './ITPBehaviorSlider';
+import { ITPBehaviorSlider } from './ITPBehaviorSlider';
 
 interface ITPVirtueSectionProps {
   virtue: ITPVirtue;
   behaviors: ITPBehavior[];
-  ratings: Record<string, number>;
-  onRatingChange: (behaviorKey: string, rating: number) => void;
+  responses: Record<string, number>;
+  onResponseChange: (behaviorKey: string, rating: number) => void;
   disabled?: boolean;
 }
 
-export default function ITPVirtueSection({
+export function ITPVirtueSection({
   virtue,
   behaviors,
-  ratings,
-  onRatingChange,
+  responses,
+  onResponseChange,
   disabled = false,
 }: ITPVirtueSectionProps) {
   const config = VIRTUE_CONFIG[virtue];
-  const ratedCount = behaviors.filter((b) => ratings[b.behaviorKey]).length;
 
   return (
-    <div
-      className={`rounded-lg border-2 ${config.borderColor} ${config.bgColor} p-6 mb-6`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-xl font-semibold ${config.color}`}>
+    <div className={`mb-8 rounded-xl border-2 ${config.borderColor} overflow-hidden`}>
+      <div className={`${config.bgColor} px-6 py-4 border-b ${config.borderColor}`}>
+        <h3 className={`text-xl font-bold ${config.color}`}>
           {config.displayName}
         </h3>
-        <span className="text-sm text-gray-500">
-          {ratedCount}/{behaviors.length} rated
-        </span>
       </div>
 
-      <div className="bg-white rounded-lg p-4">
+      <div className="p-4 bg-white">
         {behaviors.map((behavior) => (
           <ITPBehaviorSlider
             key={behavior.behaviorKey}
             behavior={behavior}
-            value={ratings[behavior.behaviorKey] || null}
-            onChange={onRatingChange}
+            value={responses[behavior.behaviorKey] ?? null}
+            onChange={onResponseChange}
             disabled={disabled}
           />
         ))}
@@ -49,3 +44,5 @@ export default function ITPVirtueSection({
     </div>
   );
 }
+
+export default ITPVirtueSection;

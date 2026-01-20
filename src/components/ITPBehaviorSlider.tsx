@@ -1,7 +1,8 @@
 'use client';
 
-import { ITPBehavior } from '@/types';
-import { RATING_LABELS } from '@/lib/itpBehaviors';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { ITPBehavior, ITPVirtue } from '@/types';
+import { VIRTUE_CONFIG, RATING_LABELS } from '@/lib/itpBehaviors';
 
 interface ITPBehaviorSliderProps {
   behavior: ITPBehavior;
@@ -10,115 +11,214 @@ interface ITPBehaviorSliderProps {
   disabled?: boolean;
 }
 
-export default function ITPBehaviorSlider({
+export function ITPBehaviorSlider({
   behavior,
   value,
   onChange,
   disabled = false,
 }: ITPBehaviorSliderProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rating = Math.round(parseFloat(e.target.value));
-    onChange(behavior.behaviorKey, rating);
+  const [localValue, setLocalValue] = useState<number>(value ?? 1);
+  const [isDragging, setIsDragging] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (value !== null && !isDragging) {
+      setLocalValue(value);
+    }
+  }, [value, isDragging]);
+
+  const virtueConfig = VIRTUE_CONFIG[behavior.virtue];
+
+  const getPositionFromValue = (val: number): number => {
+    return ((val - 1) / 4) * 100;
   };
 
-  const handleDotClick = (rating: number) => {
-    if (!disabled) {
-      onChange(behavior.behaviorKey, rating);
+  const getValueFromPosition = (position: number): number => {
+    const rawValue = 1 + (position / 100) * 4;
+    return Math.max(1, Math.min(5, rawValue));
+  };
+
+  const snapToNearest = (val: number): number => {
+    return Math.round(val);
+  };
+
+  const handleSliderInteraction = useCallback(
+    (clientX: number) => {
+      if (disabled || !sliderRef.current) return;
+      const rect = sliderRef.current.getBoundingClientRect();
+      const position = ((clientX - rect.left) / rect.width) * 100;
+      const clampedPosition = Math.max(0, Math.min(100, position));
+      const newValue = getValueFromPosition(clampedPosition);
+      setLocalValue(newValue);
+    },
+    [disabled]
+  );
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (disabled) return;
+    setIsDragging(true);
+    handleSliderInteraction(e.clientX);
+  };
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+      handleSliderInteraction(e.clientX);
+    },
+    [isDragging, handleSliderInteraction]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      const snappedValue = snapToNearest(localValue);
+      setLocalValue(snappedValue);
+      onChange(behavior.behaviorKey, snappedValue);
+      setIsDragging(false);
+    }
+  }, [isDragging, localValue, behavior.behaviorKey, onChange]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (disabled) return;
+    setIsDragging(true);
+    handleSliderInteraction(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging) return;
+      handleSliderInteraction(e.touches[0].clientX);
+    },
+    [isDragging, handleSliderInteraction]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDragging) {
+      const snappedValue = snapToNearest(localValue);
+      setLocalValue(snappedValue);
+      onChange(behavior.behaviorKey, snappedValue);
+      setIsDragging(false);
+    }
+  }, [isDragging, localValue, behavior.behaviorKey, onChange]);
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
+  const handleMarkerClick = (markerValue: number) => {
+    if (disabled) return;
+    setLocalValue(markerValue);
+    onChange(behavior.behaviorKey, markerValue);
+  };
+
+  const displayValue = isDragging ? localValue : (value ?? 1);
+  const thumbPosition = getPositionFromValue(displayValue);
+
+  const getAccentColor = (virtue: ITPVirtue): string => {
+    switch (virtue) {
+      case 'humble': return 'bg-blue-500';
+      case 'hungry': return 'bg-orange-500';
+      case 'people_smart': return 'bg-purple-500';
     }
   };
 
+  const accentColor = getAccentColor(behavior.virtue);
+
   return (
-    <div className="py-4 border-b border-gray-100 last:border-b-0">
-      <h4 className="font-medium text-gray-900 mb-3">{behavior.behaviorName}</h4>
+    <div className={`p-4 rounded-lg border ${virtueConfig.borderColor} ${virtueConfig.bgColor} mb-4`}>
+      <h4 className={`font-semibold text-base mb-3 ${virtueConfig.color}`}>
+        {behavior.behaviorName}
+      </h4>
 
-      {/* Three column descriptions */}
-      <div className="grid grid-cols-3 gap-4 mb-4 text-xs">
-        <div className="text-left">
-          <div className="font-medium text-red-600 mb-1">Not Living (1)</div>
-          <p className="text-gray-600 leading-relaxed">
-            {behavior.descriptionNotLiving}
-          </p>
+      <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
+        <div className="p-2 bg-white/50 rounded border border-gray-200">
+          <div className="font-medium text-red-700 mb-1">Not Living</div>
+          <p className="text-gray-600 leading-relaxed">{behavior.descriptionNotLiving}</p>
         </div>
-        <div className="text-center">
-          <div className="font-medium text-yellow-600 mb-1">Living (3)</div>
-          <p className="text-gray-600 leading-relaxed">
-            {behavior.descriptionLiving}
-          </p>
+        <div className="p-2 bg-white/50 rounded border border-gray-200">
+          <div className="font-medium text-yellow-700 mb-1">Living</div>
+          <p className="text-gray-600 leading-relaxed">{behavior.descriptionLiving}</p>
         </div>
-        <div className="text-right">
-          <div className="font-medium text-green-600 mb-1">Role Modeling (5)</div>
-          <p className="text-gray-600 leading-relaxed">
-            {behavior.descriptionRoleModeling}
-          </p>
+        <div className="p-2 bg-white/50 rounded border border-gray-200">
+          <div className="font-medium text-green-700 mb-1">Role Modeling</div>
+          <p className="text-gray-600 leading-relaxed">{behavior.descriptionRoleModeling}</p>
         </div>
       </div>
 
-      {/* Slider */}
-      <div className="relative pt-2">
-        {/* Track background */}
-        <div className="absolute top-1/2 left-0 right-0 h-2 bg-gray-200 rounded-full -translate-y-1/2" />
+      <div className="px-2">
+        <div
+          ref={sliderRef}
+          className={`relative h-8 select-none ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-gray-200 rounded-full">
+            <div
+              className={`absolute top-0 left-0 h-full ${accentColor} rounded-full transition-all ${isDragging ? 'duration-0' : 'duration-150'}`}
+              style={{ width: `${thumbPosition}%` }}
+            />
+          </div>
 
-        {/* Progress fill */}
-        {value && (
+          {[1, 2, 3, 4, 5].map((markerValue) => {
+            const markerPosition = getPositionFromValue(markerValue);
+            const isActive = displayValue >= markerValue;
+            const isSnapped = Math.round(displayValue) === markerValue;
+
+            return (
+              <button
+                key={markerValue}
+                type="button"
+                disabled={disabled}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkerClick(markerValue);
+                }}
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all ${
+                  isSnapped
+                    ? `${accentColor} border-white scale-125 shadow-md`
+                    : isActive
+                    ? `${accentColor} border-white`
+                    : 'bg-white border-gray-300'
+                } ${disabled ? '' : 'hover:scale-110'}`}
+                style={{ left: `${markerPosition}%` }}
+                aria-label={`Rate ${markerValue}`}
+              />
+            );
+          })}
+
           <div
-            className="absolute top-1/2 left-0 h-2 bg-blue-500 rounded-full -translate-y-1/2 transition-all"
-            style={{ width: `${((value - 1) / 4) * 100}%` }}
+            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full ${accentColor} border-2 border-white shadow-lg transition-all ${
+              isDragging ? 'scale-125 duration-0' : 'duration-150'
+            }`}
+            style={{ left: `${thumbPosition}%` }}
           />
-        )}
-
-        {/* Clickable dots */}
-        <div className="relative flex justify-between px-0">
-          {[1, 2, 3, 4, 5].map((rating) => (
-            <button
-              key={rating}
-              type="button"
-              onClick={() => handleDotClick(rating)}
-              disabled={disabled}
-              className={`w-6 h-6 rounded-full border-2 transition-all z-10 ${
-                value === rating
-                  ? 'bg-blue-500 border-blue-500 scale-110'
-                  : value && value > rating
-                  ? 'bg-blue-500 border-blue-500'
-                  : 'bg-white border-gray-300 hover:border-blue-400'
-              } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-              title={RATING_LABELS[rating] || `Rating ${rating}`}
-            >
-              <span className="sr-only">Rating {rating}</span>
-            </button>
-          ))}
         </div>
 
-        {/* Hidden range input for accessibility */}
-        <input
-          type="range"
-          min="1"
-          max="5"
-          step="1"
-          value={value || 3}
-          onChange={handleChange}
-          disabled={disabled}
-          className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-          aria-label={`Rate ${behavior.behaviorName}`}
-        />
-      </div>
-
-      {/* Rating labels */}
-      <div className="flex justify-between mt-2 text-xs text-gray-500">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>4</span>
-        <span>5</span>
-      </div>
-
-      {/* Current value indicator */}
-      {value && (
-        <div className="text-center mt-2">
-          <span className="text-sm font-medium text-blue-600">
-            Current: {value} {RATING_LABELS[value] && `(${RATING_LABELS[value]})`}
-          </span>
+        <div className="flex justify-between mt-1 text-xs text-gray-500">
+          <span>1</span>
+          <span>2</span>
+          <span>3</span>
+          <span>4</span>
+          <span>5</span>
         </div>
-      )}
+        <div className="flex justify-between mt-0.5 text-xs">
+          <span className="text-red-600 font-medium">Not Living</span>
+          <span className="text-yellow-600 font-medium">Living</span>
+          <span className="text-green-600 font-medium">Role Modeling</span>
+        </div>
+      </div>
     </div>
   );
 }
+
+export default ITPBehaviorSlider;

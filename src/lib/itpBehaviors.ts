@@ -1,18 +1,7 @@
 import { ITPBehavior, ITPVirtue } from '@/types';
 
-/**
- * ITP (Ideal Team Player) Behaviors
- * Based on the Ideal Team Player Guide (Rev. Jan 2025)
- *
- * Three virtues: Humble, Hungry, People Smart
- * Each virtue has 4 core behaviors
- * Each behavior has 3 levels: Not Living, Living, Role Modeling
- */
-
 export const ITP_BEHAVIORS: ITPBehavior[] = [
-  // ============================================
   // HUMBLE (4 behaviors)
-  // ============================================
   {
     virtue: 'humble',
     behaviorKey: 'recognition',
@@ -45,10 +34,7 @@ export const ITP_BEHAVIORS: ITPBehavior[] = [
     descriptionLiving: 'Uses words like: "Perhaps", "I think", and "My gut says that"',
     descriptionRoleModeling: 'Is very comfortable saying: "I don\'t know" or "I could use your input"',
   },
-
-  // ============================================
   // HUNGRY (4 behaviors)
-  // ============================================
   {
     virtue: 'hungry',
     behaviorKey: 'initiative',
@@ -81,10 +67,7 @@ export const ITP_BEHAVIORS: ITPBehavior[] = [
     descriptionLiving: 'Easily connects the work of self and others to the company\'s goals',
     descriptionRoleModeling: 'Helps others find ways to contribute to the team and actively looks for next projects/areas to tackle',
   },
-
-  // ============================================
   // PEOPLE SMART (4 behaviors)
-  // ============================================
   {
     virtue: 'people_smart',
     behaviorKey: 'adaptability',
@@ -119,9 +102,6 @@ export const ITP_BEHAVIORS: ITPBehavior[] = [
   },
 ];
 
-/**
- * Get behaviors grouped by virtue
- */
 export function getBehaviorsByVirtue(): Record<ITPVirtue, ITPBehavior[]> {
   return {
     humble: ITP_BEHAVIORS.filter(b => b.virtue === 'humble'),
@@ -130,23 +110,14 @@ export function getBehaviorsByVirtue(): Record<ITPVirtue, ITPBehavior[]> {
   };
 }
 
-/**
- * Get a behavior by its key
- */
 export function getBehaviorByKey(key: string): ITPBehavior | undefined {
   return ITP_BEHAVIORS.find(b => b.behaviorKey === key);
 }
 
-/**
- * Get all behavior keys
- */
 export function getAllBehaviorKeys(): string[] {
   return ITP_BEHAVIORS.map(b => b.behaviorKey);
 }
 
-/**
- * Virtue display names and colors
- */
 export const VIRTUE_CONFIG: Record<ITPVirtue, { displayName: string; color: string; bgColor: string; borderColor: string }> = {
   humble: {
     displayName: 'Humble',
@@ -168,9 +139,6 @@ export const VIRTUE_CONFIG: Record<ITPVirtue, { displayName: string; color: stri
   },
 };
 
-/**
- * Rating labels for the 5-point scale
- */
 export const RATING_LABELS: Record<number, string> = {
   1: 'Not Living',
   2: '',

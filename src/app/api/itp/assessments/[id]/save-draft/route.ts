@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, canEditAssessment } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { SaveDraftRequest } from '@/types';
 
 // POST /api/itp/assessments/[id]/save-draft
@@ -17,7 +17,7 @@ export async function POST(
   const body: SaveDraftRequest = await request.json();
 
   // Fetch assessment to verify it exists and is a draft
-  const { data: assessment, error: fetchError } = await supabaseAdmin
+  const { data: assessment, error: fetchError } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select('employee_id, status')
     .eq('id', id)
@@ -44,7 +44,7 @@ export async function POST(
     updated_at: new Date().toISOString(),
   }));
 
-  const { error: upsertError } = await supabaseAdmin
+  const { error: upsertError } = await getSupabaseAdmin()
     .from('itp_responses')
     .upsert(responsesToUpsert, {
       onConflict: 'assessment_id,behavior_key',
@@ -55,7 +55,7 @@ export async function POST(
   }
 
   // Update assessment's updated_at
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('itp_assessments')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', id);
