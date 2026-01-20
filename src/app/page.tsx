@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { ITPSelfAssessment } from '@/components/ITPSelfAssessment';
 import { ITPLogo } from '@/components/ITPLogo';
-import { LogOut } from 'lucide-react';
+import { SignOutButton } from '@/components/SignOutButton';
 
 export default async function HomePage() {
   const user = await getAuthenticatedUser();
@@ -22,15 +22,7 @@ export default async function HomePage() {
             </div>
             <span className="text-base font-medium">{user.full_name || user.email}</span>
           </div>
-          <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </button>
-          </form>
+          <SignOutButton />
         </div>
       </header>
 
