@@ -30,12 +30,12 @@ export function ITPBehaviorSlider({
   const virtueConfig = VIRTUE_CONFIG[behavior.virtue];
 
   const getPositionFromValue = (val: number): number => {
-    return ((val - 1) / 4) * 100;
+    return ((val - 1) / 9) * 100;
   };
 
   const getValueFromPosition = (position: number): number => {
-    const rawValue = 1 + (position / 100) * 4;
-    return Math.max(1, Math.min(5, rawValue));
+    const rawValue = 1 + (position / 100) * 9;
+    return Math.max(1, Math.min(10, rawValue));
   };
 
   const snapToNearest = (val: number): number => {
@@ -171,7 +171,7 @@ export function ITPBehaviorSlider({
           </div>
 
           {/* Markers */}
-          {[1, 2, 3, 4, 5].map((markerValue) => {
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((markerValue) => {
             const markerPosition = getPositionFromValue(markerValue);
             const isActive = displayValue >= markerValue;
             const isSnapped = Math.round(displayValue) === markerValue;
@@ -185,7 +185,7 @@ export function ITPBehaviorSlider({
                   e.stopPropagation();
                   handleMarkerClick(markerValue);
                 }}
-                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-150 ${
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 transition-all duration-150 ${
                   disabled ? '' : 'hover:scale-110'
                 }`}
                 style={{ 
@@ -212,18 +212,22 @@ export function ITPBehaviorSlider({
           />
         </div>
 
-        {/* Scale Labels */}
-        <div className="flex justify-between mt-2 text-xs text-neutral-500 font-medium">
-          <span>1</span>
-          <span>2</span>
-          <span>3</span>
-          <span>4</span>
-          <span>5</span>
+        {/* Scale Labels - positioned to match nodes exactly */}
+        <div className="relative mt-2 text-xs text-neutral-500 font-medium h-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+            <span
+              key={num}
+              className="absolute -translate-x-1/2"
+              style={{ left: `${((num - 1) / 9) * 100}%` }}
+            >
+              {num}
+            </span>
+          ))}
         </div>
-        <div className="flex justify-between mt-1 text-xs">
-          <span className="text-red-600 font-medium">Not Living</span>
-          <span className="text-amber-600 font-medium">Living</span>
-          <span className="text-emerald-600 font-medium">Role Modeling</span>
+        <div className="relative mt-1 text-xs h-4">
+          <span className="absolute left-0 text-red-600 font-medium">Not Living</span>
+          <span className="absolute text-amber-600 font-medium" style={{ left: `${((7 - 1) / 9) * 100}%`, transform: 'translateX(-50%)' }}>Living</span>
+          <span className="absolute right-0 text-emerald-600 font-medium">Role Modeling</span>
         </div>
       </div>
     </div>
