@@ -24,17 +24,28 @@ export function ITPLogo({ size = 40, className = '' }: ITPLogoProps) {
       <defs>
         {/* Gradients for each circle */}
         <linearGradient id="humbleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={humbleColor} stopOpacity="0.85" />
-          <stop offset="100%" stopColor={humbleColor} stopOpacity="0.6" />
+          <stop offset="0%" stopColor={humbleColor} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={humbleColor} stopOpacity="0.7" />
         </linearGradient>
         <linearGradient id="hungryGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={hungryColor} stopOpacity="0.85" />
-          <stop offset="100%" stopColor={hungryColor} stopOpacity="0.6" />
+          <stop offset="0%" stopColor={hungryColor} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={hungryColor} stopOpacity="0.7" />
         </linearGradient>
         <linearGradient id="peopleSmartGradient" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={peopleSmartColor} stopOpacity="0.85" />
-          <stop offset="100%" stopColor={peopleSmartColor} stopOpacity="0.6" />
+          <stop offset="0%" stopColor={peopleSmartColor} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={peopleSmartColor} stopOpacity="0.7" />
         </linearGradient>
+        
+        {/* Clip paths for intersection highlighting */}
+        <clipPath id="topCircle">
+          <circle cx="50" cy="32" r="28" />
+        </clipPath>
+        <clipPath id="bottomLeftCircle">
+          <circle cx="34" cy="60" r="28" />
+        </clipPath>
+        <clipPath id="bottomRightCircle">
+          <circle cx="66" cy="60" r="28" />
+        </clipPath>
       </defs>
 
       {/* Three overlapping circles */}
@@ -65,14 +76,21 @@ export function ITPLogo({ size = 40, className = '' }: ITPLogoProps) {
         style={{ mixBlendMode: 'multiply' }}
       />
 
-      {/* Center highlight - the "Ideal Team Player" intersection */}
-      <circle
-        cx="50"
-        cy="50"
-        r="10"
-        fill="white"
-        fillOpacity="0.4"
-      />
+      {/* Center intersection highlight using nested clip paths */}
+      {/* This creates the proper curved triangular shape */}
+      <g clipPath="url(#topCircle)">
+        <g clipPath="url(#bottomLeftCircle)">
+          <g clipPath="url(#bottomRightCircle)">
+            <circle
+              cx="50"
+              cy="50"
+              r="30"
+              fill="white"
+              fillOpacity="0.35"
+            />
+          </g>
+        </g>
+      </g>
     </svg>
   );
 }
