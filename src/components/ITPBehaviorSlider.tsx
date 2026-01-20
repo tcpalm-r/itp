@@ -124,37 +124,32 @@ export function ITPBehaviorSlider({
   const displayValue = isDragging ? localValue : (value ?? 1);
   const thumbPosition = getPositionFromValue(displayValue);
 
-  const getAccentColor = (virtue: ITPVirtue): string => {
-    switch (virtue) {
-      case 'humble': return 'bg-blue-500';
-      case 'hungry': return 'bg-orange-500';
-      case 'people_smart': return 'bg-purple-500';
-    }
-  };
-
-  const accentColor = getAccentColor(behavior.virtue);
+  // Get accent color from virtue config
+  const accentColor = virtueConfig.accentColor;
 
   return (
-    <div className={`p-4 rounded-lg border ${virtueConfig.borderColor} ${virtueConfig.bgColor} mb-4`}>
-      <h4 className={`font-semibold text-base mb-3 ${virtueConfig.color}`}>
+    <div className={`p-5 rounded-xl border ${virtueConfig.borderColor} ${virtueConfig.bgColor} mb-4 transition-all duration-200 hover:shadow-sm`}>
+      <h4 className={`font-semibold text-base mb-4 ${virtueConfig.color}`}>
         {behavior.behaviorName}
       </h4>
 
-      <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
-        <div className="p-2 bg-white/50 rounded border border-gray-200">
-          <div className="font-medium text-red-700 mb-1">Not Living</div>
-          <p className="text-gray-600 leading-relaxed">{behavior.descriptionNotLiving}</p>
+      {/* Description Cards */}
+      <div className="grid grid-cols-3 gap-3 mb-5 text-xs">
+        <div className="p-3 bg-white/70 rounded-lg border border-neutral-200/60">
+          <div className="font-medium text-red-600 mb-1.5">Not Living</div>
+          <p className="text-neutral-600 leading-relaxed">{behavior.descriptionNotLiving}</p>
         </div>
-        <div className="p-2 bg-white/50 rounded border border-gray-200">
-          <div className="font-medium text-yellow-700 mb-1">Living</div>
-          <p className="text-gray-600 leading-relaxed">{behavior.descriptionLiving}</p>
+        <div className="p-3 bg-white/70 rounded-lg border border-neutral-200/60">
+          <div className="font-medium text-amber-600 mb-1.5">Living</div>
+          <p className="text-neutral-600 leading-relaxed">{behavior.descriptionLiving}</p>
         </div>
-        <div className="p-2 bg-white/50 rounded border border-gray-200">
-          <div className="font-medium text-green-700 mb-1">Role Modeling</div>
-          <p className="text-gray-600 leading-relaxed">{behavior.descriptionRoleModeling}</p>
+        <div className="p-3 bg-white/70 rounded-lg border border-neutral-200/60">
+          <div className="font-medium text-emerald-600 mb-1.5">Role Modeling</div>
+          <p className="text-neutral-600 leading-relaxed">{behavior.descriptionRoleModeling}</p>
         </div>
       </div>
 
+      {/* Slider */}
       <div className="px-2">
         <div
           ref={sliderRef}
@@ -162,13 +157,20 @@ export function ITPBehaviorSlider({
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
         >
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-gray-200 rounded-full">
+          {/* Track Background */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-neutral-200 rounded-full">
+            {/* Active Track */}
             <div
-              className={`absolute top-0 left-0 h-full ${accentColor} rounded-full transition-all ${isDragging ? 'duration-0' : 'duration-150'}`}
-              style={{ width: `${thumbPosition}%` }}
+              className="absolute top-0 left-0 h-full rounded-full transition-all"
+              style={{ 
+                width: `${thumbPosition}%`,
+                backgroundColor: accentColor,
+                transitionDuration: isDragging ? '0ms' : '150ms'
+              }}
             />
           </div>
 
+          {/* Markers */}
           {[1, 2, 3, 4, 5].map((markerValue) => {
             const markerPosition = getPositionFromValue(markerValue);
             const isActive = displayValue >= markerValue;
@@ -183,38 +185,45 @@ export function ITPBehaviorSlider({
                   e.stopPropagation();
                   handleMarkerClick(markerValue);
                 }}
-                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all ${
-                  isSnapped
-                    ? `${accentColor} border-white scale-125 shadow-md`
-                    : isActive
-                    ? `${accentColor} border-white`
-                    : 'bg-white border-gray-300'
-                } ${disabled ? '' : 'hover:scale-110'}`}
-                style={{ left: `${markerPosition}%` }}
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-150 ${
+                  disabled ? '' : 'hover:scale-110'
+                }`}
+                style={{ 
+                  left: `${markerPosition}%`,
+                  backgroundColor: isSnapped || isActive ? accentColor : 'white',
+                  borderColor: isSnapped || isActive ? 'white' : '#D1D5DB',
+                  transform: `translate(-50%, -50%) scale(${isSnapped ? 1.25 : 1})`,
+                  boxShadow: isSnapped ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                }}
                 aria-label={`Rate ${markerValue}`}
               />
             );
           })}
 
+          {/* Thumb */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full ${accentColor} border-2 border-white shadow-lg transition-all ${
-              isDragging ? 'scale-125 duration-0' : 'duration-150'
-            }`}
-            style={{ left: `${thumbPosition}%` }}
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-lg transition-all"
+            style={{ 
+              left: `${thumbPosition}%`,
+              backgroundColor: accentColor,
+              transform: `translate(-50%, -50%) scale(${isDragging ? 1.25 : 1})`,
+              transitionDuration: isDragging ? '0ms' : '150ms'
+            }}
           />
         </div>
 
-        <div className="flex justify-between mt-1 text-xs text-gray-500">
+        {/* Scale Labels */}
+        <div className="flex justify-between mt-2 text-xs text-neutral-500 font-medium">
           <span>1</span>
           <span>2</span>
           <span>3</span>
           <span>4</span>
           <span>5</span>
         </div>
-        <div className="flex justify-between mt-0.5 text-xs">
+        <div className="flex justify-between mt-1 text-xs">
           <span className="text-red-600 font-medium">Not Living</span>
-          <span className="text-yellow-600 font-medium">Living</span>
-          <span className="text-green-600 font-medium">Role Modeling</span>
+          <span className="text-amber-600 font-medium">Living</span>
+          <span className="text-emerald-600 font-medium">Role Modeling</span>
         </div>
       </div>
     </div>

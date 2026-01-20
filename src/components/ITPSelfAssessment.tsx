@@ -183,25 +183,28 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-        <span className="ml-3 text-gray-500">Loading assessment...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-sonance-cyan" />
+        <span className="ml-3 text-muted-foreground">Loading assessment...</span>
       </div>
     );
   }
 
   if (!currentAssessment && isOwnAssessment && !isViewOnly) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No ITP Self-Assessment Yet</h3>
-        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+      <div className="text-center py-12 animate-fade-in">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-sonance-charcoal/5 mb-6">
+          <Plus className="w-10 h-10 text-sonance-charcoal" />
+        </div>
+        <h3 className="text-xl font-semibold text-sonance-charcoal mb-3">Start Your Assessment</h3>
+        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
           Take the Ideal Team Player self-assessment to evaluate yourself across 12 core behaviors in three virtues: Humble, Hungry, and People Smart.
         </p>
-        <button onClick={createAssessment} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button onClick={createAssessment} className="inline-flex items-center px-5 py-2.5 bg-sonance-charcoal text-white rounded-lg hover:bg-sonance-charcoal-light transition-all duration-200 font-medium shadow-sm hover:shadow-md">
           <Plus className="w-4 h-4 mr-2" />Start Self-Assessment
         </button>
         {archivedAssessments.length > 0 && (
-          <div className="mt-8">
-            <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center mx-auto">
+          <div className="mt-10">
+            <button onClick={() => setShowHistory(!showHistory)} className="text-muted-foreground hover:text-sonance-charcoal text-sm flex items-center mx-auto transition-colors">
               {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
               View Past Assessments ({archivedAssessments.length})
             </button>
@@ -215,15 +218,15 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
 
   if (!currentAssessment) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-          <AlertCircle className="w-8 h-8 text-gray-400" />
+      <div className="text-center py-12 animate-fade-in">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-neutral-100 mb-6">
+          <AlertCircle className="w-10 h-10 text-neutral-400" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Assessment Available</h3>
-        <p className="text-gray-500 max-w-md mx-auto">{employeeName || 'This employee'} has not completed an ITP self-assessment yet.</p>
+        <h3 className="text-xl font-semibold text-sonance-charcoal mb-3">No Assessment Available</h3>
+        <p className="text-muted-foreground max-w-md mx-auto">{employeeName || 'This employee'} has not completed an ITP self-assessment yet.</p>
         {archivedAssessments.length > 0 && (
-          <div className="mt-8">
-            <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center mx-auto">
+          <div className="mt-10">
+            <button onClick={() => setShowHistory(!showHistory)} className="text-muted-foreground hover:text-sonance-charcoal text-sm flex items-center mx-auto transition-colors">
               {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
               View Past Assessments ({archivedAssessments.length})
             </button>
@@ -235,72 +238,108 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
+      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">ITP Self-Assessment</h2>
-          <p className="text-sm text-gray-500 mt-1">Rate yourself on each behavior from 1 (Not Living) to 5 (Role Modeling)</p>
+          <h2 className="text-xl font-semibold text-sonance-charcoal">ITP Self-Assessment</h2>
+          <p className="text-sm text-muted-foreground mt-1">Rate yourself on each behavior from 1 (Not Living) to 5 (Role Modeling)</p>
         </div>
         <div className="flex items-center gap-3">
-          {isDraft && <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"><Clock className="w-4 h-4 mr-1" />Draft</span>}
-          {isSubmitted && <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"><CheckCircle className="w-4 h-4 mr-1" />Submitted</span>}
+          {isDraft && (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
+              <Clock className="w-4 h-4 mr-1.5" />Draft
+            </span>
+          )}
+          {isSubmitted && (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle className="w-4 h-4 mr-1.5" />Submitted
+            </span>
+          )}
           {canEdit && (
             <div className="flex items-center text-sm">
-              {saveStatus === 'saving' && <span className="text-gray-500 flex items-center"><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving...</span>}
-              {saveStatus === 'saved' && <span className="text-green-600 flex items-center"><CheckCircle className="w-4 h-4 mr-1" />Saved</span>}
+              {saveStatus === 'saving' && <span className="text-muted-foreground flex items-center"><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving...</span>}
+              {saveStatus === 'saved' && <span className="text-emerald-600 flex items-center"><CheckCircle className="w-4 h-4 mr-1" />Saved</span>}
               {saveStatus === 'error' && <span className="text-red-600 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />Save failed</span>}
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-          <span className="text-sm text-gray-500">{completedCount}/{totalCount} behaviors rated</span>
+      {/* Progress Bar */}
+      <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-sonance-charcoal">Overall Progress</span>
+          <span className="text-sm text-muted-foreground">{completedCount}/{totalCount} behaviors rated</span>
         </div>
-        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-          <div className={`h-full transition-all duration-300 ${isComplete ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${(completedCount / totalCount) * 100}%` }} />
+        <div className="h-3 bg-neutral-100 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-500 ease-out ${isComplete ? 'bg-emerald-500' : 'bg-sonance-cyan'}`} 
+            style={{ width: `${(completedCount / totalCount) * 100}%` }} 
+          />
         </div>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-          <div className="flex items-center"><AlertCircle className="w-5 h-5 mr-2" />{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          <div className="flex items-center"><AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />{error}</div>
         </div>
       )}
 
+      {/* Virtue Sections */}
       {(['humble', 'hungry', 'people_smart'] as ITPVirtue[]).map((virtue) => (
         <ITPVirtueSection key={virtue} virtue={virtue} behaviors={behaviorsByVirtue[virtue]} responses={responses} onResponseChange={handleResponseChange} disabled={!canEdit} />
       ))}
 
+      {/* Action Buttons */}
       {canEdit && (
-        <div className="flex justify-between pt-4 border-t border-gray-200">
-          <button onClick={resetDraft} disabled={resetting} className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-50">
+        <div className="flex justify-between pt-6 border-t border-neutral-200">
+          <button 
+            onClick={resetDraft} 
+            disabled={resetting} 
+            className="inline-flex items-center px-4 py-2.5 border border-neutral-200 rounded-lg text-muted-foreground bg-white hover:bg-neutral-50 hover:text-sonance-charcoal transition-all duration-200 disabled:opacity-50 font-medium"
+          >
             {resetting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}Reset
           </button>
           <div className="flex gap-3">
-            <button onClick={() => saveDraft(responses)} disabled={saveStatus === 'saving'} className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50">
+            <button 
+              onClick={() => saveDraft(responses)} 
+              disabled={saveStatus === 'saving'} 
+              className="inline-flex items-center px-4 py-2.5 border border-neutral-200 rounded-lg text-sonance-charcoal bg-white hover:bg-neutral-50 transition-all duration-200 disabled:opacity-50 font-medium"
+            >
               <Save className="w-4 h-4 mr-2" />Save Draft
             </button>
-            <button onClick={submitAssessment} disabled={!isComplete || submitting} className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button 
+              onClick={submitAssessment} 
+              disabled={!isComplete || submitting} 
+              className="inline-flex items-center px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
+            >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Submit Assessment
             </button>
           </div>
         </div>
       )}
 
+      {/* Start New Assessment (for submitted) */}
       {isSubmitted && isOwnAssessment && !isViewOnly && (
-        <div className="flex justify-end pt-4 border-t border-gray-200">
-          <button onClick={createAssessment} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <div className="flex justify-end pt-6 border-t border-neutral-200">
+          <button 
+            onClick={createAssessment} 
+            className="inline-flex items-center px-5 py-2.5 bg-sonance-charcoal text-white rounded-lg hover:bg-sonance-charcoal-light transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+          >
             <Plus className="w-4 h-4 mr-2" />Start New Assessment
           </button>
         </div>
       )}
 
+      {/* Past Assessments */}
       {archivedAssessments.length > 0 && (
-        <div className="pt-4 border-t border-gray-200">
-          <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-gray-700 text-sm flex items-center">
+        <div className="pt-6 border-t border-neutral-200">
+          <button 
+            onClick={() => setShowHistory(!showHistory)} 
+            className="text-muted-foreground hover:text-sonance-charcoal text-sm flex items-center transition-colors"
+          >
             {showHistory ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
             Past Assessments ({archivedAssessments.length})
           </button>

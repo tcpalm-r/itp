@@ -118,24 +118,35 @@ export function getAllBehaviorKeys(): string[] {
   return ITP_BEHAVIORS.map(b => b.behaviorKey);
 }
 
-export const VIRTUE_CONFIG: Record<ITPVirtue, { displayName: string; color: string; bgColor: string; borderColor: string }> = {
+// Sonance Brand Color Palette for Virtues
+// Using complementary colors that work with the Charcoal/Cyan brand
+export const VIRTUE_CONFIG: Record<ITPVirtue, { 
+  displayName: string; 
+  color: string; 
+  bgColor: string; 
+  borderColor: string;
+  accentColor: string;
+}> = {
   humble: {
     displayName: 'Humble',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-sonance-charcoal',
+    bgColor: 'bg-[#E8F4FC]',
+    borderColor: 'border-[#B8D9EC]',
+    accentColor: '#00A3E1', // Sonance Cyan
   },
   hungry: {
     displayName: 'Hungry',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    color: 'text-sonance-charcoal',
+    bgColor: 'bg-[#FEF3E8]',
+    borderColor: 'border-[#F5D5B3]',
+    accentColor: '#E88C30', // Warm amber
   },
   people_smart: {
     displayName: 'People Smart',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
+    color: 'text-sonance-charcoal',
+    bgColor: 'bg-[#F3EEF8]',
+    borderColor: 'border-[#D4C4E3]',
+    accentColor: '#7C5BB0', // Soft purple
   },
 };
 

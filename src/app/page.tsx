@@ -11,17 +11,23 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="bg-sonance-charcoal text-white shadow-md">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">ITP Self-Assessment</h1>
-            <p className="text-sm text-gray-500">{user.full_name || user.email}</p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm">
+              <span className="text-sm font-bold tracking-tight">ITP</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight">ITP Self-Assessment</h1>
+              <p className="text-sm text-white/70">{user.full_name || user.email}</p>
+            </div>
           </div>
           <form action="/api/auth/logout" method="POST">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
             >
               <LogOut className="w-4 h-4" />
               Sign out
@@ -30,6 +36,7 @@ export default async function HomePage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <ITPSelfAssessment
           employeeId={user.id}
@@ -38,6 +45,15 @@ export default async function HomePage() {
           isViewOnly={false}
         />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-neutral-200 mt-auto">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <p className="text-center text-xs text-muted-foreground">
+            Powered by Sonance
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
