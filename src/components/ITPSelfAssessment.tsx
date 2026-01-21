@@ -91,7 +91,7 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
     }
   };
 
-  const saveDraft = useCallback(async (changesToSave: Record<string, number>) => {
+  const saveDraft = useCallback(async (changesToSave: Record<string, number>, throwOnError = false) => {
     if (!currentAssessment || currentAssessment.status !== 'draft') return;
     const responseArray = Object.entries(changesToSave).map(([behaviorKey, rating]) => ({ behaviorKey, rating }));
     if (responseArray.length === 0) return;
@@ -103,12 +103,16 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ responses: responseArray }),
       });
-      if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Failed to save draft'); }
+      if (!response.ok) { 
+        const data = await response.json(); 
+        throw new Error(data.error || 'Failed to save draft'); 
+      }
       setSaveStatus('saved');
       pendingChangesRef.current = {};
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       setSaveStatus('error');
+      if (throwOnError) throw err; // Re-throw for submit to catch
     }
   }, [currentAssessment]);
 
@@ -136,14 +140,17 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
 
   const submitAssessment = async () => {
     if (!currentAssessment) return;
-    // Always save ALL current responses before submitting to ensure database matches UI state
-    if (Object.keys(responses).length > 0) {
-      await saveDraft(responses);
-      pendingChangesRef.current = {}; // Clear pending changes after full save
-    }
+    
     try {
       setSubmitting(true);
       setError(null);
+      
+      // Always save ALL current responses before submitting to ensure database matches UI state
+      if (Object.keys(responses).length > 0) {
+        await saveDraft(responses, true); // throwOnError = true
+        pendingChangesRef.current = {}; // Clear pending changes after full save
+      }
+      
       const response = await fetch(`/api/itp/assessments/${currentAssessment.id}/submit`, { method: 'POST' });
       const data = await response.json();
       if (!response.ok) {
