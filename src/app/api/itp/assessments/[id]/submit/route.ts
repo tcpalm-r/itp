@@ -46,7 +46,13 @@ export async function POST(
   const ratedBehaviors = new Set(assessment.itp_responses?.map((r) => r.behavior_key) || []);
   const missingBehaviors = allBehaviorKeys.filter((key) => !ratedBehaviors.has(key));
 
+  // Log for debugging
+  console.log(`[submit] User: ${user.email} (${user.id}), Assessment: ${id}`);
+  console.log(`[submit] Rated behaviors in DB: ${Array.from(ratedBehaviors).join(', ')}`);
+  console.log(`[submit] Missing behaviors: ${missingBehaviors.length > 0 ? missingBehaviors.join(', ') : 'none'}`);
+
   if (missingBehaviors.length > 0) {
+    console.error(`[submit] REJECTED - Missing: ${missingBehaviors.join(', ')}`);
     return NextResponse.json(
       { error: 'All behaviors must be rated', missingBehaviors },
       { status: 400 }
