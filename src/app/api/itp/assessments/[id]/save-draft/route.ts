@@ -44,11 +44,6 @@ export async function POST(
     updated_at: new Date().toISOString(),
   }));
 
-  // Log for debugging save issues
-  console.log(`[save-draft] User: ${user.email} (${user.id}), Assessment: ${id}, Responses:`, 
-    body.responses.map((r: { behaviorKey: string; rating: number }) => `${r.behaviorKey}=${r.rating}`).join(', ')
-  );
-
   const { error: upsertError } = await getSupabaseAdmin()
     .from('itp_responses')
     .upsert(responsesToUpsert, {
@@ -56,11 +51,8 @@ export async function POST(
     });
 
   if (upsertError) {
-    console.error(`[save-draft] FAILED for user ${user.email}: ${upsertError.message}`);
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
-  
-  console.log(`[save-draft] SUCCESS for user ${user.email}, ${body.responses.length} responses saved`);
 
   // Update assessment's updated_at
   await getSupabaseAdmin()
