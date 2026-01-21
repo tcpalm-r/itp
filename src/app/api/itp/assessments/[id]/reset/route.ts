@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { getAuthenticatedUserFromCookies } from '@/lib/auth-server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 // POST /api/itp/assessments/[id]/reset
@@ -8,7 +8,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

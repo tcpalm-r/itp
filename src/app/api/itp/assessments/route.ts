@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, canViewAssessment, canEditAssessment } from '@/lib/auth';
+import { getAuthenticatedUserFromCookies, canViewAssessment, canEditAssessment } from '@/lib/auth-server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 // GET /api/itp/assessments?employee_id=<uuid>
 export async function GET(request: NextRequest) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/itp/assessments - Create new draft assessment
 export async function POST(request: NextRequest) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

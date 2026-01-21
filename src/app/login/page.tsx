@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Loader2, AlertCircle } from 'lucide-react';
 import { ITPLogo } from '@/components/ITPLogo';
@@ -10,6 +10,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check if auth is disabled - if not, this page shouldn't be shown
+  const authDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true';
+
+  useEffect(() => {
+    // If auth is enabled, redirect to home (middleware will handle Sonance Hub redirect)
+    if (!authDisabled) {
+      router.replace('/');
+    }
+  }, [authDisabled, router]);
+
+  // Show loading while redirecting in production
+  if (!authDisabled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

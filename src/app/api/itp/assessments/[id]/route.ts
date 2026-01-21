@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, canViewAssessment, canEditAssessment } from '@/lib/auth';
+import { getAuthenticatedUserFromCookies, canViewAssessment, canEditAssessment } from '@/lib/auth-server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 // GET /api/itp/assessments/[id]
@@ -7,7 +7,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -65,7 +65,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

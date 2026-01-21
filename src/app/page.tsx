@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { getAuthenticatedUserFromCookies } from '@/lib/auth-server';
 import { ITPSelfAssessment } from '@/components/ITPSelfAssessment';
 import { ITPLogo } from '@/components/ITPLogo';
 import { SignOutButton } from '@/components/SignOutButton';
 
 export default async function HomePage() {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUserFromCookies();
 
   if (!user) {
     redirect('/login');

@@ -11,14 +11,22 @@ export function SignOutButton() {
   async function handleSignOut() {
     setIsLoading(true);
     try {
-      await fetch('/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
+        redirect: 'manual',
       });
-      router.push('/login');
-      router.refresh();
+
+      // If we got a redirect (production), follow it
+      if (response.type === 'opaqueredirect' || response.redirected) {
+        window.location.href = response.url || '/';
+        return;
+      }
+
+      // Navigate to home - middleware will handle auth redirect
+      window.location.href = '/';
     } catch (error) {
       console.error('Sign out failed:', error);
-      setIsLoading(false);
+      window.location.href = '/';
     }
   }
 
