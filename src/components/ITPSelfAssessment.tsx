@@ -136,7 +136,11 @@ export function ITPSelfAssessment({ employeeId, employeeName, currentUserId, isV
 
   const submitAssessment = async () => {
     if (!currentAssessment) return;
-    if (Object.keys(pendingChangesRef.current).length > 0) await saveDraft(pendingChangesRef.current);
+    // Always save ALL current responses before submitting to ensure database matches UI state
+    if (Object.keys(responses).length > 0) {
+      await saveDraft(responses);
+      pendingChangesRef.current = {}; // Clear pending changes after full save
+    }
     try {
       setSubmitting(true);
       setError(null);
