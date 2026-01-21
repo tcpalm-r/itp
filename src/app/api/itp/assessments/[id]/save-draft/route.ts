@@ -36,11 +36,12 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Upsert responses
+  // Upsert responses (includes user_email for audit trail)
   const responsesToUpsert = body.responses.map((r) => ({
     assessment_id: id,
     behavior_key: r.behaviorKey,
     rating: r.rating,
+    user_email: user.email,
     updated_at: new Date().toISOString(),
   }));
 
