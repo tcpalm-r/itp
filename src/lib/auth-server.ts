@@ -26,17 +26,34 @@ export interface ITPUser {
  */
 export async function getAuthenticatedUserFromCookies(): Promise<ITPUser | null> {
   if (AUTH_DISABLED) {
-    // In dev mode, try to get user from database using mock user ID
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get(USER_COOKIE)?.value;
+
+    // Check for user cookie set by dev user switcher
+    let userId = MOCK_USER.id;
+    if (userCookie) {
+      try {
+        const cookieUser = JSON.parse(userCookie);
+        if (cookieUser.id) {
+          userId = cookieUser.id;
+        }
+      } catch {
+        // Fall back to MOCK_USER
+      }
+    }
+
+    // Get user from database
     const { data: profile } = await getSupabaseAdmin()
       .from('user_profiles')
       .select('id, email, full_name, app_role, manager_id, manager_email')
-      .eq('id', MOCK_USER.id)
+      .eq('id', userId)
       .single();
 
     if (profile) {
       return profile as ITPUser;
     }
 
+    // Fall back to mock user if not found in database
     return {
       id: MOCK_USER.id,
       email: MOCK_USER.email,
@@ -136,13 +153,58 @@ export function canViewAssessment(
 
 /**
  * Check if user can edit an assessment
+ * For self-assessments: user must be the employee
+ * For manager assessments: user must be the assessor (the manager who created it)
  */
-export function canEditAssessment(currentUser: ITPUser, targetEmployeeId: string): boolean {
-  // User can edit their own
-  if (currentUser.id === targetEmployeeId) return true;
-
+export function canEditAssessment(
+  currentUser: ITPUser,
+  targetEmployeeId: string,
+  assessorId?: string,
+  assessmentType?: 'self' | 'manager'
+): boolean {
   // Admin can edit all
   if (currentUser.app_role === 'admin') return true;
 
+  // For self-assessments (or legacy calls without assessmentType)
+  if (!assessmentType || assessmentType === 'self') {
+    return currentUser.id === targetEmployeeId;
+  }
+
+  // For manager assessments: user must be the assessor
+  if (assessmentType === 'manager' && assessorId) {
+    return currentUser.id === assessorId;
+  }
+
   return false;
+}
+
+/**
+ * Check if current user is a manager (has any direct reports)
+ */
+export async function isManager(userId: string, userEmail: string): Promise<boolean> {
+  const { count } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('id', { count: 'exact', head: true })
+    .or(`manager_id.eq.${userId},manager_email.eq.${userEmail}`);
+
+  return (count || 0) > 0;
+}
+
+/**
+ * Check if a user is a manager of a specific employee
+ */
+export async function isManagerOf(
+  managerId: string,
+  managerEmail: string,
+  employeeId: string
+): Promise<boolean> {
+  const { data: employee } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('manager_id, manager_email')
+    .eq('id', employeeId)
+    .single();
+
+  if (!employee) return false;
+
+  return employee.manager_id === managerId || employee.manager_email === managerEmail;
 }

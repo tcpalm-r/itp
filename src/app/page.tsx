@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation';
-import { getAuthenticatedUserFromCookies } from '@/lib/auth-server';
+import { getAuthenticatedUserFromCookies, isManager } from '@/lib/auth-server';
 import { ITPSelfAssessment } from '@/components/ITPSelfAssessment';
+import { ITPManagerView } from '@/components/ITPManagerView';
 import { ITPLogo } from '@/components/ITPLogo';
 import { SignOutButton } from '@/components/SignOutButton';
+import { DevUserSwitcher } from '@/components/DevUserSwitcher';
 
 export default async function HomePage() {
   const user = await getAuthenticatedUserFromCookies();
@@ -10,6 +12,9 @@ export default async function HomePage() {
   if (!user) {
     redirect('/login');
   }
+
+  // Check if user is a manager (has direct reports)
+  const userIsManager = await isManager(user.id, user.email);
 
   return (
     <div className="min-h-screen">
@@ -22,19 +27,30 @@ export default async function HomePage() {
             </div>
             <span className="text-base font-medium">{user.full_name || user.email}</span>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <DevUserSwitcher currentUserEmail={user.email} />
+            <SignOutButton />
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <ITPSelfAssessment
-          employeeId={user.id}
-          employeeName={user.full_name || undefined}
-          currentUserId={user.id}
-          isViewOnly={false}
-          isAdmin={user.app_role === 'admin'}
-        />
+        {userIsManager ? (
+          <ITPManagerView
+            userId={user.id}
+            userName={user.full_name || undefined}
+            isAdmin={user.app_role === 'admin'}
+          />
+        ) : (
+          <ITPSelfAssessment
+            employeeId={user.id}
+            employeeName={user.full_name || undefined}
+            currentUserId={user.id}
+            isViewOnly={false}
+            isAdmin={user.app_role === 'admin'}
+          />
+        )}
       </main>
 
       {/* Footer */}
