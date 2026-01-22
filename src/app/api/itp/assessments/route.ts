@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUserFromCookies, canViewAssessment, canEditAssessment } from '@/lib/auth-server';
+import { getAuthenticatedUserFromCookies, canViewAssessment, canEditAssessment, isManagerOf } from '@/lib/auth-server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { ITPAssessmentType } from '@/types';
 
-// GET /api/itp/assessments?employee_id=<uuid>
+// GET /api/itp/assessments?employee_id=<uuid>&assessment_type=<self|manager>&assessor_id=<uuid>
 export async function GET(request: NextRequest) {
   const user = await getAuthenticatedUserFromCookies();
   if (!user) {
@@ -11,6 +12,8 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams;
   const employeeId = searchParams.get('employee_id') || user.id;
+  const assessmentType = (searchParams.get('assessment_type') as ITPAssessmentType) || 'self';
+  const assessorId = searchParams.get('assessor_id') || user.id;
 
   // Get the target employee's profile to check authorization
   if (employeeId !== user.id) {
@@ -25,12 +28,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Fetch assessments with responses
-  const { data: assessments, error } = await getSupabaseAdmin()
+  // Build query
+  let query = getSupabaseAdmin()
     .from('itp_assessments')
     .select(`
       id,
       employee_id,
+      assessor_id,
+      assessment_type,
       status,
       submitted_at,
       created_at,
@@ -44,7 +49,14 @@ export async function GET(request: NextRequest) {
       )
     `)
     .eq('employee_id', employeeId)
-    .order('created_at', { ascending: false });
+    .eq('assessment_type', assessmentType);
+
+  // For manager assessments, also filter by assessor
+  if (assessmentType === 'manager') {
+    query = query.eq('assessor_id', assessorId);
+  }
+
+  const { data: assessments, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -69,17 +81,29 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const employeeId = body.employee_id || user.id;
+  const assessmentType: ITPAssessmentType = body.assessment_type || 'self';
 
-  // Check if user can create assessment for this employee
-  if (!canEditAssessment(user, employeeId)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  // Authorization check
+  if (assessmentType === 'self') {
+    // Self-assessment: user must be the employee (or admin)
+    if (!canEditAssessment(user, employeeId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  } else if (assessmentType === 'manager') {
+    // Manager assessment: verify user is the manager of this employee
+    const isUserManager = await isManagerOf(user.id, user.email, employeeId);
+    if (!isUserManager && user.app_role !== 'admin') {
+      return NextResponse.json({ error: 'You are not the manager of this employee' }, { status: 403 });
+    }
   }
 
-  // Check if there's already a draft assessment
+  // Check if there's already a draft assessment for this employee-assessor-type combo
   const { data: existingDraft } = await getSupabaseAdmin()
     .from('itp_assessments')
     .select('id')
     .eq('employee_id', employeeId)
+    .eq('assessor_id', user.id)
+    .eq('assessment_type', assessmentType)
     .eq('status', 'draft')
     .single();
 
@@ -95,6 +119,8 @@ export async function POST(request: NextRequest) {
     .from('itp_assessments')
     .insert({
       employee_id: employeeId,
+      assessor_id: user.id,
+      assessment_type: assessmentType,
       status: 'draft',
     })
     .select()

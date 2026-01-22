@@ -4,6 +4,7 @@
 
 export type ITPVirtue = 'humble' | 'hungry' | 'people_smart';
 export type ITPAssessmentStatus = 'draft' | 'submitted' | 'archived';
+export type ITPAssessmentType = 'self' | 'manager';
 
 export interface ITPBehavior {
   virtue: ITPVirtue;
@@ -26,6 +27,8 @@ export interface ITPResponse {
 export interface ITPAssessment {
   id: string;
   employee_id: string;
+  assessor_id: string;
+  assessment_type: ITPAssessmentType;
   status: ITPAssessmentStatus;
   submitted_at: string | null;
   created_at: string;
@@ -47,4 +50,13 @@ export interface SaveDraftRequest {
     behaviorKey: string;
     rating: number;
   }>;
+}
+
+export interface DirectReport {
+  id: string;
+  email: string;
+  full_name: string | null;
+  department: string | null;
+  title: string | null;
+  managerAssessmentStatus: 'none' | 'draft' | 'submitted';
 }

@@ -20,6 +20,8 @@ export async function POST(
     .from('itp_assessments')
     .select(`
       employee_id,
+      assessor_id,
+      assessment_type,
       status,
       itp_responses (
         behavior_key
@@ -37,7 +39,7 @@ export async function POST(
   }
 
   // Check permission
-  if (!canEditAssessment(user, assessment.employee_id)) {
+  if (!canEditAssessment(user, assessment.employee_id, assessment.assessor_id, assessment.assessment_type)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -53,12 +55,20 @@ export async function POST(
     );
   }
 
-  // Archive any previously submitted assessment
-  await getSupabaseAdmin()
+  // Archive any previously submitted assessment of the same type by the same assessor
+  let archiveQuery = getSupabaseAdmin()
     .from('itp_assessments')
     .update({ status: 'archived' })
     .eq('employee_id', assessment.employee_id)
+    .eq('assessment_type', assessment.assessment_type)
     .eq('status', 'submitted');
+
+  // For manager assessments, only archive the same assessor's previous submissions
+  if (assessment.assessment_type === 'manager') {
+    archiveQuery = archiveQuery.eq('assessor_id', assessment.assessor_id);
+  }
+
+  await archiveQuery;
 
   // Submit the current assessment
   const { data: submittedAssessment, error: submitError } = await getSupabaseAdmin()

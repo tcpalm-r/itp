@@ -19,7 +19,7 @@ export async function POST(
   // Fetch assessment to verify it exists and is a draft
   const { data: assessment, error: fetchError } = await getSupabaseAdmin()
     .from('itp_assessments')
-    .select('employee_id, status')
+    .select('employee_id, assessor_id, assessment_type, status')
     .eq('id', id)
     .single();
 
@@ -32,7 +32,7 @@ export async function POST(
   }
 
   // Check permission
-  if (!canEditAssessment(user, assessment.employee_id)) {
+  if (!canEditAssessment(user, assessment.employee_id, assessment.assessor_id, assessment.assessment_type)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
