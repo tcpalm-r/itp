@@ -14,11 +14,31 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
 
   // Fetch direct reports where manager_id = user.id OR manager_email = user.email
-  const { data: directReports, error: reportsError } = await supabase
-    .from('user_profiles')
-    .select('id, email, full_name, department, title')
-    .or(`manager_id.eq.${user.id},manager_email.eq.${user.email}`)
-    .order('full_name', { ascending: true });
+  // Use two separate queries to avoid PostgREST filter parsing issues with special characters in email
+  const [byIdResult, byEmailResult] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('id, email, full_name, department, title')
+      .eq('manager_id', user.id),
+    supabase
+      .from('user_profiles')
+      .select('id, email, full_name, department, title')
+      .ilike('manager_email', user.email)
+  ]);
+
+  const reportsError = byIdResult.error || byEmailResult.error;
+
+  // Combine and deduplicate results
+  type ReportRow = { id: string; email: string; full_name: string | null; department: string | null; title: string | null };
+  const directReportsMap = new Map<string, ReportRow>();
+  for (const report of (byIdResult.data || []) as ReportRow[]) {
+    directReportsMap.set(report.id, report);
+  }
+  for (const report of (byEmailResult.data || []) as ReportRow[]) {
+    directReportsMap.set(report.id, report);
+  }
+  const directReports = Array.from(directReportsMap.values())
+    .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
 
   if (reportsError) {
     return NextResponse.json({ error: reportsError.message }, { status: 500 });
