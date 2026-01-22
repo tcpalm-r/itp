@@ -48,20 +48,20 @@ const signAuthSyncToken = async (payload: Record<string, any>, secret: string): 
   return `${data}.${encodedSignature}`;
 };
 
-async function getLocalUserRole(email: string) {
+async function getLocalUserProfile(email: string) {
   try {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('app_role, app_permissions')
+      .select('id, app_role, app_permissions')
       .ilike('email', email)
       .eq('is_active', true)
       .single();
 
     if (error || !data) return null;
-    return { app_role: data.app_role || 'user', app_permissions: data.app_permissions || {} };
+    return { id: data.id, app_role: data.app_role || 'user', app_permissions: data.app_permissions || {} };
   } catch (error) {
-    console.error('[Auth] Error fetching local user role:', error);
+    console.error('[Auth] Error fetching local user profile:', error);
     return null;
   }
 }
@@ -117,10 +117,12 @@ export async function middleware(request: NextRequest) {
         try {
           const session = JSON.parse(teamsSessionCookie.value);
           if (session.timestamp && Date.now() - session.timestamp < 86400000) {
-            const localRole = await getLocalUserRole(session.email);
-            if (localRole) {
-              session.app_role = localRole.app_role;
-              session.app_permissions = localRole.app_permissions;
+            const localProfile = await getLocalUserProfile(session.email);
+            if (localProfile) {
+              // Fix the ID to use local DB ID (critical for FK constraints)
+              session.id = localProfile.id;
+              session.app_role = localProfile.app_role;
+              session.app_permissions = localProfile.app_permissions;
             }
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-user-data', JSON.stringify(session));
@@ -194,18 +196,18 @@ export async function middleware(request: NextRequest) {
           const user = data.user || (data.users && data.users[0]) || null;
 
           if (access && user) {
-            const localRole = await getLocalUserRole(user.email);
+            const localProfile = await getLocalUserProfile(user.email);
             const appPermissions = user.app_permissions?.['ITP'] || {};
             const mappedUser = {
-              id: user.id,
+              id: localProfile?.id || user.id,  // Use local DB ID for FK constraints
               auth0_id: user.auth0_id,
               email: user.email,
               full_name: user.full_name,
               given_name: user.given_name,
               family_name: user.family_name,
               picture: user.picture || user.avatar_url,
-              app_role: localRole?.app_role || appPermissions.role || user.app_role || 'user',
-              app_permissions: localRole?.app_permissions || appPermissions.permissions || {},
+              app_role: localProfile?.app_role || appPermissions.role || user.app_role || 'user',
+              app_permissions: localProfile?.app_permissions || appPermissions.permissions || {},
               global_role: user.global_role || user.role,
               capabilities: user.capabilities || [],
               app_access: true,
@@ -246,10 +248,12 @@ export async function middleware(request: NextRequest) {
       try {
         const session = JSON.parse(sessionCookie.value);
         if (session.timestamp && Date.now() - session.timestamp < 86400000) {
-          const localRole = await getLocalUserRole(session.email);
-          if (localRole) {
-            session.app_role = localRole.app_role;
-            session.app_permissions = localRole.app_permissions;
+          const localProfile = await getLocalUserProfile(session.email);
+          if (localProfile) {
+            // Fix the ID to use local DB ID (critical for FK constraints)
+            session.id = localProfile.id;
+            session.app_role = localProfile.app_role;
+            session.app_permissions = localProfile.app_permissions;
           }
 
           const requestHeaders = new Headers(request.headers);
@@ -259,7 +263,7 @@ export async function middleware(request: NextRequest) {
           requestHeaders.set('x-user-email', session.email);
 
           const response = NextResponse.next({ request: { headers: requestHeaders } });
-          if (localRole) {
+          if (localProfile) {
             response.cookies.set('ai-intranet-user', JSON.stringify(session), {
               httpOnly: false,
               secure: process.env.NODE_ENV === 'production',
@@ -311,18 +315,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
-      const localRole = await getLocalUserRole(user.email);
+      const localProfile = await getLocalUserProfile(user.email);
       const appPermissions = user.app_permissions?.['ITP'] || {};
       const mappedUser = {
-        id: user.id,
+        id: localProfile?.id || user.id,  // Use local DB ID for FK constraints
         auth0_id: user.auth0_id,
         email: user.email,
         full_name: user.full_name,
         given_name: user.given_name,
         family_name: user.family_name,
         picture: user.picture,
-        app_role: localRole?.app_role || appPermissions.role || user.app_role || 'user',
-        app_permissions: localRole?.app_permissions || appPermissions.permissions || {},
+        app_role: localProfile?.app_role || appPermissions.role || user.app_role || 'user',
+        app_permissions: localProfile?.app_permissions || appPermissions.permissions || {},
         global_role: user.global_role || user.role,
         capabilities: user.capabilities || [],
         app_access: true,
