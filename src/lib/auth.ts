@@ -78,6 +78,22 @@ export const TEST_USERS: SessionUser[] = [
     department: 'Executive',
     title: 'Executive Assistant',
   },
+  {
+    id: 'a9d7553c-e416-47fc-ba1a-f4cb53425b12',
+    auth0_id: 'leader1.test@example.com',
+    email: 'leader1.test@example.com',
+    full_name: 'Leader 1 [TEST]',
+    given_name: 'Leader 1',
+    family_name: '[TEST]',
+    picture: null,
+    app_role: 'leader',
+    app_permissions: { read: true, admin: false, write: false },
+    global_role: 'user',
+    capabilities: [],
+    app_access: true,
+    department: null,
+    title: 'Engineering Manager',
+  },
 ];
 
 export const SESSION_COOKIE = 'ai-intranet-session';
