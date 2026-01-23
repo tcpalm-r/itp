@@ -60,3 +60,19 @@ export interface DirectReport {
   title: string | null;
   managerAssessmentStatus: 'none' | 'draft' | 'submitted';
 }
+
+export interface AssessmentComparison {
+  managerAssessment: ITPAssessment | null;
+  selfAssessment: ITPAssessment | null;
+  behaviors: BehaviorComparison[];
+}
+
+export interface BehaviorComparison {
+  behaviorKey: string;
+  behaviorName: string;
+  virtue: ITPVirtue;
+  managerRating: number | null;
+  selfRating: number | null;
+  difference: number | null;
+  hasSignificantDifference: boolean;
+}

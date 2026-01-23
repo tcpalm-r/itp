@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ITPAssessment, ITPVirtue } from '@/types';
 import { getBehaviorsByVirtue, getAllBehaviorKeys } from '@/lib/itpBehaviors';
 import { ITPVirtueSection } from './ITPVirtueSection';
-import { Loader2, Save, Send, Plus, CheckCircle, AlertCircle, Clock, RotateCcw } from 'lucide-react';
+import { ITPAssessmentComparison } from './ITPAssessmentComparison';
+import { Loader2, Save, Send, Plus, CheckCircle, AlertCircle, Clock, RotateCcw, BarChart2 } from 'lucide-react';
 
 interface ITPManagerAssessmentProps {
   employeeId: string;
@@ -29,6 +30,7 @@ export function ITPManagerAssessment({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [submitting, setSubmitting] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingChangesRef = useRef<Record<string, number>>({});
@@ -197,7 +199,8 @@ export function ITPManagerAssessment({
         }
         throw new Error(data.error || 'Failed to submit assessment');
       }
-      await loadAssessments();
+      // Show comparison view after successful submission
+      setShowComparison(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit assessment');
     } finally {
@@ -236,6 +239,18 @@ export function ITPManagerAssessment({
   const isDraft = currentAssessment?.status === 'draft';
   const isSubmitted = currentAssessment?.status === 'submitted';
   const canEdit = isDraft;
+
+  // Show comparison view after submission
+  if (showComparison) {
+    return (
+      <ITPAssessmentComparison
+        employeeId={employeeId}
+        employeeName={employeeName}
+        managerId={managerId}
+        onBack={onBack}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -302,10 +317,19 @@ export function ITPManagerAssessment({
             </span>
           )}
           {isSubmitted && (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <CheckCircle className="w-4 h-4 mr-1.5" />
-              Submitted
-            </span>
+            <>
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle className="w-4 h-4 mr-1.5" />
+                Submitted
+              </span>
+              <button
+                onClick={() => setShowComparison(true)}
+                className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-sonance-cyan text-white hover:bg-sonance-cyan-dark transition-colors"
+              >
+                <BarChart2 className="w-4 h-4 mr-1.5" />
+                View Comparison
+              </button>
+            </>
           )}
           {canEdit && (
             <div className="flex items-center text-sm">
