@@ -31,6 +31,11 @@ const base64UrlEncode = (input: Uint8Array | string): string => {
   return buffer.toString('base64url');
 };
 
+// Encode user data for safe HTTP header transport (handles non-ASCII characters like accented names)
+const encodeUserDataForHeader = (userData: Record<string, any>): string => {
+  return Buffer.from(JSON.stringify(userData), 'utf-8').toString('base64');
+};
+
 const signAuthSyncToken = async (payload: Record<string, any>, secret: string): Promise<string> => {
   const header = { alg: 'HS256', typ: 'JWT' };
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
@@ -125,7 +130,7 @@ export async function middleware(request: NextRequest) {
               session.app_permissions = localProfile.app_permissions;
             }
             const requestHeaders = new Headers(request.headers);
-            requestHeaders.set('x-user-data', JSON.stringify(session));
+            requestHeaders.set('x-user-data', encodeUserDataForHeader(session));
             requestHeaders.set('x-user-id', session.auth0_id || session.id);
             requestHeaders.set('x-user-role', session.app_role);
             requestHeaders.set('x-user-email', session.email);
@@ -158,7 +163,7 @@ export async function middleware(request: NextRequest) {
       }
 
       const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-user-data', JSON.stringify(currentUser));
+      requestHeaders.set('x-user-data', encodeUserDataForHeader(currentUser));
       requestHeaders.set('x-user-id', currentUser.auth0_id || currentUser.id);
       requestHeaders.set('x-user-role', currentUser.app_role);
       requestHeaders.set('x-user-email', currentUser.email);
@@ -257,7 +262,7 @@ export async function middleware(request: NextRequest) {
           }
 
           const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('x-user-data', JSON.stringify(session));
+          requestHeaders.set('x-user-data', encodeUserDataForHeader(session));
           requestHeaders.set('x-user-id', session.auth0_id);
           requestHeaders.set('x-user-role', session.app_role);
           requestHeaders.set('x-user-email', session.email);
@@ -336,7 +341,7 @@ export async function middleware(request: NextRequest) {
       };
 
       const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-user-data', JSON.stringify(mappedUser));
+      requestHeaders.set('x-user-data', encodeUserDataForHeader(mappedUser));
       requestHeaders.set('x-user-id', mappedUser.auth0_id);
       requestHeaders.set('x-user-role', mappedUser.app_role);
       requestHeaders.set('x-user-email', mappedUser.email);

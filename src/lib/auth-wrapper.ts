@@ -17,13 +17,29 @@ import {
 } from './auth-supabase';
 import type { SessionUser, UserProfile } from './schema';
 
+// Decode user data from base64-encoded header (handles non-ASCII characters like accented names)
+function decodeUserDataFromHeader(encoded: string): Record<string, any> | null {
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    return JSON.parse(decoded);
+  } catch {
+    // Fallback: try parsing as raw JSON for backwards compatibility
+    try {
+      return JSON.parse(encoded);
+    } catch {
+      return null;
+    }
+  }
+}
+
 export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<{ user: SessionUser; profile: UserProfile } | null> {
   const userDataHeader = request.headers.get('x-user-data');
   if (userDataHeader) {
     try {
-      const sessionUser = JSON.parse(userDataHeader) as SessionUser;
+      const sessionUser = decodeUserDataFromHeader(userDataHeader) as SessionUser;
+      if (!sessionUser) throw new Error('Failed to decode user data');
       const profile = await getUserProfileByEmail(sessionUser.email);
       if (profile) {
         return { user: toSessionUser(profile), profile };
