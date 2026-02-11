@@ -20,7 +20,7 @@ export default async function HomePage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-sonance-charcoal text-white shadow-md">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm">
               <ITPLogo size={32} />
@@ -35,7 +35,7 @@ export default async function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         {userIsManager ? (
           <ITPManagerView
             userId={user.id}
@@ -55,7 +55,7 @@ export default async function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-neutral-200 mt-auto">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-6xl mx-auto px-4 py-4">
           <p className="text-center text-xs text-muted-foreground">
             Powered by Sonance
           </p>
