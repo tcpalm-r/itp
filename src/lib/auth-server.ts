@@ -144,7 +144,7 @@ export function canViewAssessment(
   if (currentUser.app_role === 'admin') return true;
 
   // Manager can view direct reports
-  if (targetManagerId === currentUser.id || targetManagerEmail === currentUser.email) {
+  if (targetManagerId === currentUser.id || targetManagerEmail?.toLowerCase() === currentUser.email?.toLowerCase()) {
     return true;
   }
 
@@ -185,7 +185,7 @@ export async function isManager(userId: string, userEmail: string): Promise<bool
   const { count } = await getSupabaseAdmin()
     .from('user_profiles')
     .select('id', { count: 'exact', head: true })
-    .or(`manager_id.eq.${userId},manager_email.eq.${userEmail}`);
+    .or(`manager_id.eq.${userId},manager_email.ilike.${userEmail}`);
 
   return (count || 0) > 0;
 }
@@ -206,5 +206,5 @@ export async function isManagerOf(
 
   if (!employee) return false;
 
-  return employee.manager_id === managerId || employee.manager_email === managerEmail;
+  return employee.manager_id === managerId || employee.manager_email?.toLowerCase() === managerEmail?.toLowerCase();
 }
